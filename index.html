@@ -3,109 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector QR - Cámara Trasera Forzada</title>
+    <title>Lector QR Profesional</title>
     <script src="https://unpkg.com" type="text/javascript"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 30px;
-            background-color: #f4f4f9;
-        }
-        #lector {
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-            border: 2px solid #333;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 1rem;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 5px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-        }
-        button:disabled {
-            background-color: #ccc;
-        }
-        #resultado {
-            margin-top: 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9; }
+        #lector { width: 100%; max-width: 400px; margin: 20px auto; border: 2px solid #333; background: #000; min-height: 300px; }
+        button { padding: 12px 24px; font-size: 1rem; margin: 5px; cursor: pointer; border-radius: 5px; border: none; background-color: #007bff; color: white; font-weight: bold; }
+        button:disabled { background-color: #ccc; }
+        #resultado { margin-top: 20px; font-size: 1.2rem; font-weight: bold; padding: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>Escáner QR (Cámara Trasera)</h1>
+    <h1>Escáner QR</h1>
     
-    <button id="btn-encender">Encender Cámara</button>
-    <button id="btn-apagar" disabled>Apagar Cámara</button>
+    <button id="btn-encender">Iniciar Escáner</button>
+    <button id="btn-apagar" disabled>Detener</button>
 
     <div id="lector"></div>
-
-    <div id="resultado">Cámara apagada</div>
+    <div id="resultado">Estado: Cámara apagada</div>
 
     <script>
-        // Instanciamos el lector directamente sobre el div
         const html5QrCode = new Html5Qrcode("lector");
-        
         const btnEncender = document.getElementById('btn-encender');
         const btnApagar = document.getElementById('btn-apagar');
         const contenedorResultado = document.getElementById('resultado');
 
-        // Configuración del escaneo
-        const configuracion = { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 } 
-        };
-
-        // Evento para encender la cámara
         btnEncender.addEventListener('click', () => {
-            contenedorResultado.innerText = "Iniciando cámara...";
+            contenedorResultado.innerText = "Estado: Solicitando acceso...";
             
-            // "environment" fuerza la cámara trasera. Usa "user" si quisieras la delantera.
+            // Usamos la configuración estándar recomendada por la documentación de GitHub
             html5QrCode.start(
                 { facingMode: "environment" }, 
-                configuracion,
+                { fps: 10, qrbox: { width: 250, height: 250 } },
                 (textoDecodificado) => {
-                    // Acción al escanear con éxito
-                    if (textoDecodificado.startsWith('http://') || textoDecodificado.startsWith('https://')) {
-                        contenedorResultado.innerHTML = `<a href="${textoDecodificado}" target="_blank">Enlace: ${textoDecodificado} 🔗</a>`;
-                    } else {
-                        contenedorResultado.innerText = `Contenido: ${textoDecodificado}`;
-                    }
+                    contenedorResultado.innerHTML = `<strong>Detectado:</strong> <a href="${textoDecodificado}" target="_blank">${textoDecodificado}</a>`;
                 },
-                (error) => {
-                    // Ignoramos los errores continuos de lectura para no saturar
-                }
+                (error) => { /* Silenciar alertas de lectura fallida instantánea */ }
             )
             .then(() => {
                 btnEncender.disabled = true;
                 btnApagar.disabled = false;
+                contenedorResultado.innerText = "Estado: Buscando código QR...";
             })
             .catch((err) => {
-                contenedorResultado.innerText = `Error de acceso: ${err}`;
+                contenedorResultado.innerText = `Error: ${err}`;
+                // Alerta nativa para identificar el problema exacto en pantallas móviles
+                alert("Error al iniciar cámara: " + err + "\n\nRecuerda que debes abrir esta página usando HTTPS de forma obligatoria.");
             });
         });
 
-        // Evento para apagar la cámara
         btnApagar.addEventListener('click', () => {
             html5QrCode.stop().then(() => {
-                contenedorResultado.innerText = "Cámara apagada";
+                contenedorResultado.innerText = "Estado: Cámara apagada";
                 btnEncender.disabled = false;
                 btnApagar.disabled = true;
-            }).catch((err) => {
-                console.error("Error al detener la cámara", err);
             });
         });
     </script>
 
 </body>
 </html>
+
