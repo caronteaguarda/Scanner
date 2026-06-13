@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector QR Profesional</title>
+    <title>Escáner QR - GitHub Pages compatible</title>
     <script src="https://unpkg.com" type="text/javascript"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9; }
-        #lector { width: 100%; max-width: 400px; margin: 20px auto; border: 2px solid #333; background: #000; min-height: 300px; }
-        button { padding: 12px 24px; font-size: 1rem; margin: 5px; cursor: pointer; border-radius: 5px; border: none; background-color: #007bff; color: white; font-weight: bold; }
+        #lector { width: 100%; max-width: 400px; margin: 20px auto; border: 2px solid #333; background: #000; min-height: 300px; border-radius: 8px; }
+        button { padding: 12px 24px; font-size: 1rem; margin: 5px; cursor: pointer; border-radius: 5px; border: none; background-color: #28a745; color: white; font-weight: bold; }
         button:disabled { background-color: #ccc; }
-        #resultado { margin-top: 20px; font-size: 1.2rem; font-weight: bold; padding: 10px; }
+        #resultado { margin-top: 20px; font-size: 1.2rem; font-weight: bold; padding: 10px; color: #333; }
     </style>
 </head>
 <body>
 
-    <h1>Escáner QR</h1>
+    <h1>Escáner QR Profesional</h1>
     
-    <button id="btn-encender">Iniciar Escáner</button>
+    <button id="btn-encender">Iniciar Cámara</button>
     <button id="btn-apagar" disabled>Detener</button>
 
     <div id="lector"></div>
-    <div id="resultado">Estado: Cámara apagada</div>
+    <div id="resultado">Estado: Listo para iniciar</div>
 
     <script>
         const html5QrCode = new Html5Qrcode("lector");
@@ -30,26 +30,42 @@
         const contenedorResultado = document.getElementById('resultado');
 
         btnEncender.addEventListener('click', () => {
-            contenedorResultado.innerText = "Estado: Solicitando acceso...";
-            
-            // Usamos la configuración estándar recomendada por la documentación de GitHub
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                (textoDecodificado) => {
-                    contenedorResultado.innerHTML = `<strong>Detectado:</strong> <a href="${textoDecodificado}" target="_blank">${textoDecodificado}</a>`;
-                },
-                (error) => { /* Silenciar alertas de lectura fallida instantánea */ }
-            )
-            .then(() => {
-                btnEncender.disabled = true;
-                btnApagar.disabled = false;
-                contenedorResultado.innerText = "Estado: Buscando código QR...";
-            })
-            .catch((err) => {
-                contenedorResultado.innerText = `Error: ${err}`;
-                // Alerta nativa para identificar el problema exacto en pantallas móviles
-                alert("Error al iniciar cámara: " + err + "\n\nRecuerda que debes abrir esta página usando HTTPS de forma obligatoria.");
+            contenedorResultado.innerText = "Solicitando permisos de cámara...";
+
+            // 1. Obtenemos las cámaras disponibles del dispositivo de forma directa
+            Html5Qrcode.getCameras().then(devices => {
+                if (devices && devices.length > 0) {
+                    // En móviles, la última cámara de la lista suele ser la trasera principal
+                    const camaraTraseraId = devices[devices.length - 1].id;
+                    
+                    contenedorResultado.innerText = "Encendiendo lente trasera...";
+
+                    // 2. Iniciamos el escáner usando el ID físico real de la cámara
+                    html5QrCode.start(
+                        camaraTraseraId, 
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        (textoDecodificado) => {
+                            contenedorResultado.innerHTML = `<strong>Éxito:</strong> <a href="${textoDecodificado}" target="_blank">${textoDecodificado} 🔗</a>`;
+                        },
+                        (error) => { /* Ignorar ruido visual de lectura */ }
+                    )
+                    .then(() => {
+                        btnEncender.disabled = true;
+                        btnApagar.disabled = false;
+                        contenedorResultado.innerText = "Estado: Buscando código QR...";
+                    })
+                    .catch(err => {
+                        contenedorResultado.innerText = `Error al encender: ${err}`;
+                        alert("Error al encender lente: " + err);
+                    });
+
+                } else {
+                    contenedorResultado.innerText = "No se encontraron cámaras.";
+                    alert("No se detectó ninguna cámara en este dispositivo.");
+                }
+            }).catch(err => {
+                contenedorResultado.innerText = `Error de permisos o HTTPS: ${err}`;
+                alert("Error de acceso: " + err + "\n\nAsegúrate de aceptar el permiso de cámara que solicita el navegador.");
             });
         });
 
@@ -64,4 +80,3 @@
 
 </body>
 </html>
-
